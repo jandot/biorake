@@ -1,7 +1,36 @@
 #!/usr/bin/env ruby
 require 'rake'
+require 'activerecord'
 
-##############################################################################
+#######################################################
+# Connection to database that contains task timestamps
+#######################################################
+
+class BioRakeConnection < ActiveRecord::Base
+  self.abstract_class = true
+  
+  establish_connection(
+    :adapter => 'sqlite3',
+    :database => 'biorake.sqlite3'
+  )
+end
+
+class Meta < BioRakeConnection
+  set_table_name 'meta'
+  
+  def self.exist?(name)
+    if Meta.find_by_task(name).nil?
+      return false
+    else
+      return true
+    end
+  end
+end
+
+##########################
+# Extension of rake
+##########################
+
 module Rake
 
   # #########################################################################
