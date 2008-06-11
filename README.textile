@@ -1,0 +1,116 @@
+h1. Why this project?
+
+There is some interest in the bioinformatics community for using rake
+as a workflow tool (see e.g. this "blog post from BioinformaticsZen":http://www.bioinformaticszen.com/2008/05/organised-bioinformatics-exp
+).
+
+Rake could be ideal for this type of work: a typical workflow will
+take data and perform a first set of conversions on it (i.e. a task),
+followed by a second set of conversions (that is dependent on the
+first task), and so on.
+
+However, bioinformaticians try to keep their data in databases rather
+than files. And we found we need some workarounds to get dependencies
+working. Does anyone know if it would be very difficult to add
+functionality to rake to check a meta table in a database for
+timestamps of tasks rather than looking at timestamps of files? I was
+thinking of a table looking like the one below:
+
+table: meta
+<pre>
+  id  task                            updated_at
+ ==========================================================
+   1  001_load_data                   2008-06-11 14:05:44
+   2  002_calculate_averages          2008-06-11 14:05:45
+   3  003_make_histogram_of_averages  2008-06-11 14:06:03
+</pre>
+
+The rakefile would then contain:
+<pre>
+ task :001_load_data do
+   <do stuff>
+   <automatically update record in meta table>
+ end
+
+ task :002_calculate_averages => [:001_load_data] do
+   <do stuff>
+   <automatically update record in meta table>
+ end
+
+ task :003_make_histogram_of_averages => [:002_calculate_averages] do
+   <do stuff>
+   <automatically update record in meta table>
+ end
+</pre>
+
+So if we had reloaded the data (001), then the timestamp for that task
+in the meta table would be later than the one for task 002. As a
+result, task 002 would automatically have to be rerun if we were to
+run task 003. 
+
+h1. Implementation
+
+I've started to implement an additional type of task, called *db*. The above
+snippet from a Rakefile would actually contain
+<pre>
+ db :001_load_data do
+   ...
+ end
+ 
+ db :002_calculated_averages => [:001_load_data] do
+   ...
+ end
+</pre>
+instead of using the *task* tag.
+
+Similar to a FileTask, *timestamps* are used to check if certain tasks have to be
+re-run or not. FileTasks have the advantage that every file has a timestamp. To
+implement this in a database, I decided to create a *meta table* that keeps 
+track of a task name and the moment it was run. Above you can see an example of
+what such a table would look like.
+
+A *db task* automatically:
+
+# checks the meta table to see if the task has already been run
+# if so: are there any prerequisites with timestamps that are newer than the task
+itself?
+# (re)run the task if necessary
+# update the meta table
+
+h1. Sample
+
+The sample/ directory contains an example of how this can be used. Suppose a
+researcher has intensities for a group of individuals on a number of probes. 
+This information should be loaded into a database with the tables _individuals_,
+_probes_ and _intensities_.
+
+As the _intensities_ table contains foreign keys for individual and probe, the
+_individuals_ and _probes_ tables have to be loaded *before* the intensities can
+be loaded.
+
+In rake-speak, this would look like:
+<pre>
+db :load_probes do
+  _load the actual data_
+end
+
+db :load_individuals do
+  _load the actual data_
+end
+
+db :load_intensities => [:load_probes, :load_individuals] do
+  _load the actual data_
+end
+</pre>
+
+In a later step, the researcher might want to calculate the average intensity 
+per probe. This would be a new task that depends on the intensities being 
+loaded:
+<pre>
+db :calculate_averages => [:load_intensities] do
+  _calculate averages and store in probes table_
+end
+</pre>
+
+Here, we call the database that will contain the data _example.sqlite3_. The 
+_meta_ table is contained in a separated database called _biorake.sqlite3_.
