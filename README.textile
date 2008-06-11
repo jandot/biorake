@@ -7,44 +7,34 @@ as a workflow tool (see e.g. this "blog post from BioinformaticsZen":http://www.
 Rake could be ideal for this type of work: a typical workflow will
 take data and perform a first set of conversions on it (i.e. a task),
 followed by a second set of conversions (that is dependent on the
-first task), and so on.
+first task), and so on. And obviously, bioinformaticians want to keep their data
+in databases rather than files...
 
-However, bioinformaticians try to keep their data in databases rather
-than files. And we found we need some workarounds to get dependencies
-working. Does anyone know if it would be very difficult to add
-functionality to rake to check a meta table in a database for
-timestamps of tasks rather than looking at timestamps of files? I was
-thinking of a table looking like the one below:
-
-table: meta
-<pre>
-  id  task                            updated_at
- ==========================================================
-   1  001_load_data                   2008-06-11 14:05:44
-   2  002_calculate_averages          2008-06-11 14:05:45
-   3  003_make_histogram_of_averages  2008-06-11 14:06:03
-</pre>
-
-The rakefile would then contain:
+A typical Rakefile could look like this:
 <pre>
  task :001_load_data do
-   <do stuff>
-   <automatically update record in meta table>
+   <load data in database>
  end
 
  task :002_calculate_averages => [:001_load_data] do
-   <do stuff>
-   <automatically update record in meta table>
+   <update data in database>
  end
 
  task :003_make_histogram_of_averages => [:002_calculate_averages] do
    <do stuff>
-   <automatically update record in meta table>
  end
 </pre>
 
-So if we had reloaded the data (001), then the timestamp for that task
-in the meta table would be later than the one for task 002. As a
+The trouble is that there is no way yet to check whether a task has to be rerun
+or not, because there are no timestamps. Regular rake will rerun all three
+tasks from the example above, regardless if some of them have already been done.
+
+BioRake adds this task timestamp functionality to rake for working with 
+databases. The functionality needed is very similar to the one available for
+FileTasks.
+
+So if we had reloaded the data (001), the timestamp for that task
+in a meta table would be later than the one for task 002. As a
 result, task 002 would automatically have to be rerun if we were to
 run task 003. 
 
@@ -63,11 +53,21 @@ snippet from a Rakefile would actually contain
 </pre>
 instead of using the *task* tag.
 
-Similar to a FileTask, *timestamps* are used to check if certain tasks have to be
-re-run or not. FileTasks have the advantage that every file has a timestamp. To
-implement this in a database, I decided to create a *meta table* that keeps 
-track of a task name and the moment it was run. Above you can see an example of
-what such a table would look like.
+Similar to a FileTask, *timestamps* are used to check if certain tasks have to 
+be re-run or not. FileTasks have the advantage that every file has a timestamp. 
+To implement this in a database, I decided to create a *meta table* that keeps 
+track of a task name and the moment it was run. Here's an example of what such 
+a table would look like.
+
+<pre>
+  id  task                            updated_at
+ ==========================================================
+   1  001_load_data                   2008-06-11 14:05:44
+   2  002_calculate_averages          2008-06-11 14:05:45
+   3  003_make_histogram_of_averages  2008-06-11 14:06:03
+</pre>
+
+
 
 A *db task* automatically:
 
