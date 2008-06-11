@@ -1,0 +1,59 @@
+require '../lib/biorake.rb'
+
+ActiveRecord::Base.establish_connection(
+  :adapter => 'sqlite3',
+  :database => 'example.sqlite3'
+)
+
+class Probe < ActiveRecord::Base
+  has_many :intensities
+  has_many :individuals, :through => :intensity
+end
+
+class Individual < ActiveRecord::Base
+  has_many :intensities
+  has_many :probes, :through => :intensity
+end
+
+class Intensity < ActiveRecord::Base
+  belongs_to :probe
+  belongs_to :individual
+end
+
+#task :default => [:calculate_averages]
+
+desc 'Load probes'
+db :load_probes do
+  File.open('probes.txt').each do |line|
+    STDERR.puts "I'm on line " + line.chomp
+    probe_name = line.chomp
+    Probe.new(:name => probe_name).save!
+  end
+end
+
+desc 'Load individuals'
+db :load_individuals do
+  File.open('individuals.txt').each do |line|
+    ind_name = line.chomp
+    Individual.new(:name => ind_name).save!
+  end
+end
+
+desc 'Load intensities'
+db :load_intensities => [:load_probes, :load_individuals] do
+  File.open('intensities.txt').each do |line|
+    probe_name, ind_name, value = line.chomp.split(/\t/)
+    probe = Probe.find_by_name(probe_name)
+    ind = Individual.find_by_name(ind_name)
+    Intensity.new(:probe_id => probe.id, :individual_id => ind.id, :value => value.to_f).save!
+  end
+end
+
+desc 'Calculate averages'
+db :calculate_averages => [:load_intensities] do
+  Probe.find(:all).each do |probe|
+    sum = probe.intensities.inject{|sum, n| sum + n}
+    probe.avg = sum.to_f/probe.intensities.length.to_f
+    probe.save!
+  end
+end

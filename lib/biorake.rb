@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'rubygems'
 require 'rake'
 require 'activerecord'
 
@@ -34,13 +35,13 @@ end
 module Rake
 
   # #########################################################################
-  # A DataTask is a task that includes time based dependencies. Timestamps
+  # A DBTask is a task that includes time based dependencies. Timestamps
   # are contained in a meta_rake table in the database. If any of a
   # DataTask's prerequisites have a timestamp that is later than the
   # represented by this task, then the file must be rebuilt (using the
   # supplied actions).
   #
-  class DataTask < Task
+  class DBTask < Task
 
     # Is this data task needed?  Yes if it doesn't exist, or if its time stamp
     # is out of date.
@@ -78,7 +79,7 @@ module Rake
         task_name
       end
     end
-  end # class Rake::DataTask
+  end # class Rake::DBTask
 
   # #########################################################################
   # A DataCreationTask is a data task that when used as a dependency will be
@@ -86,7 +87,7 @@ module Rake
   # not re-triggered if any of its dependencies are newer, nor does trigger
   # any rebuilds of tasks that depend on it whenever it is updated.
   #
-  class DataCreationTask < DataTask
+  class DBCreationTask < DBTask
     # Is this data task needed?  Yes if it doesn't exist.
     def needed?
       Meta.find_by_task(name).nil?
@@ -103,17 +104,31 @@ end
 # Declare a data task.
 #
 # Example:
-#   data :load_probes => [:load_individuals] do
+#   db :load_probes => [:load_individuals] do
 #     File.open("my_file.txt").each do |line|
 #       probe_name, individual_id = line.chomp.split(/\t/)
 #       Probe.new(:name => probe_name, :individual_id => individual_id).new.save!
 #     end
 #   end
-def data(*args, &block)
-  Rake::DataTask.define_task(*args, &block)
+def db(*args, &block)
+  task = Rake::DBTask.define_task(*args, &block)
+
+  meta_record = Meta.find_by_task(task.name)
+  if meta_record.nil?
+    meta_record = Meta.new(:task => task.name)
+    meta_record.save!
+  end
+
+  return task
 end
 
-# Declare a data creation task.
-def data_create(args, &block)
-  Rake::DataCreationTask.define_task(args, &block)
-end
+## Declare a data creation task.
+#def db_create(args, &block)
+#  Rake::DBCreationTask.define_task(args, &block)
+#    
+##  meta_record = Meta.find_by_task(args.to_s)
+##  if meta_record.nil?
+##    meta_record = Meta.new(:task => args.to_s)
+##    meta_record.save!
+##  end
+#end

@@ -77,6 +77,11 @@ itself?
 # (re)run the task if necessary
 # update the meta table
 
+h1. Status
+
+At the moment, this extension does _not_ work yet. There are some glitches that
+I'm not able to fix yet.
+
 h1. Sample
 
 The sample/ directory contains an example of how this can be used. Suppose a
