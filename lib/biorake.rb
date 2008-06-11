@@ -62,6 +62,30 @@ module Rake
       end
     end
 
+    def execute(args)
+      if application.options.dryrun
+        puts "** Execute (dry run) #{name}"
+        return
+      end
+      if application.options.trace
+        puts "** Execute #{name}"
+      end
+      application.enhance_with_matching_rule(name) if @actions.empty?
+      @actions.each do |act|
+        case act.arity
+        when 1
+          act.call(self)
+        else
+          act.call(self, args)
+        end
+      end
+      meta_record = Meta.find_by_task(@name)
+      if meta_record.nil?
+        meta_record = Meta.new(:task => @name)
+        meta_record.save!
+      end
+    end
+
     private
 
     # Are there any prerequisites with a later time than the given time stamp?
@@ -80,25 +104,6 @@ module Rake
       end
     end
   end # class Rake::DBTask
-
-  # #########################################################################
-  # A DataCreationTask is a data task that when used as a dependency will be
-  # needed if and only if the data has not been created.  Once created, it is
-  # not re-triggered if any of its dependencies are newer, nor does trigger
-  # any rebuilds of tasks that depend on it whenever it is updated.
-  #
-  class DBCreationTask < DBTask
-    # Is this data task needed?  Yes if it doesn't exist.
-    def needed?
-      Meta.find_by_task(name).nil?
-    end
-
-    # Time stamp for data creation task.  This time stamp is earlier
-    # than any other time stamp.
-    def timestamp
-      Rake::EARLY
-    end
-  end
 end
 
 # Declare a data task.
@@ -111,24 +116,5 @@ end
 #     end
 #   end
 def db(*args, &block)
-  task = Rake::DBTask.define_task(*args, &block)
-
-  meta_record = Meta.find_by_task(task.name)
-  if meta_record.nil?
-    meta_record = Meta.new(:task => task.name)
-    meta_record.save!
-  end
-
-  return task
+  Rake::DBTask.define_task(*args, &block)
 end
-
-## Declare a data creation task.
-#def db_create(args, &block)
-#  Rake::DBCreationTask.define_task(args, &block)
-#    
-##  meta_record = Meta.find_by_task(args.to_s)
-##  if meta_record.nil?
-##    meta_record = Meta.new(:task => args.to_s)
-##    meta_record.save!
-##  end
-#end

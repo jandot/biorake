@@ -28,17 +28,17 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
   
   def test_db_need
     @task_names.push(:test)
-    name = :test
-    db name
-    db_task = DBTask[name]
-    assert_equal name.to_s, db_task.name
+    name_1 = :test
+    db name_1
+    db_task = DBTask[name_1]
+    assert_equal name_1.to_s, db_task.name
 
     @task_names.push(:db_manipulation_1)
-    name = :db_manipulation_1
-    db name
-    db_task = DBTask[name]
+    name_2 = :db_manipulation_1
+    db name_2
+    db_task = DBTask[name_2]
     assert db_task.needed?, 'task should be needed'
-    Meta.new(:task => name.to_s).save!
+    Meta.new(:task => name_2.to_s).save!
     assert_equal nil, db_task.prerequisites.collect{|n| DBTask[n].timestamp}.max
     assert ! db_task.needed?, "task should not be needed"
   end

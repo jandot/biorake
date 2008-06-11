@@ -6,6 +6,7 @@ require 'test/unit'
 require '../lib/biorake'
 require 'filecreation.rb'
 require 'capture_stdout.rb'
+require 'dbtaskcreation'
 
 
 module Interning
@@ -21,6 +22,7 @@ class DBTestTask < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
+  include DBTaskCreation
 
   def setup
     DBTask.clear
@@ -51,7 +53,7 @@ class DBTestTask < Test::Unit::TestCase
     t3 = intern(:t3).enhance { |t| runlist << t.name }
     assert_equal [:t2, :t3], t1.prerequisites
     t1.invoke
-    assert_equal ["t1", "t2", "t3"], runlist
+    assert_equal ["t2", "t3", "t1"], runlist
   end
 
   def test_invoke_with_circular_dependencies
@@ -104,14 +106,16 @@ class DBTestTask < Test::Unit::TestCase
   def test_find
     db :tfind
     assert_equal "tfind", DBTask[:tfind].name
-    ex = assert_raises(RuntimeError) { DBTask[:leaves] }
+    ex = assert_raise(RuntimeError) { DBTask[:leaves] }
     assert_equal "Don't know how to build task 'leaves'", ex.message
+    delete_task(:tfind)
   end
 
   def test_defined
     assert ! DBTask.task_defined?(:a)
     db :a
     assert DBTask.task_defined?(:a)
+    delete_task :a
   end
 
   def test_multi_invocations
@@ -122,6 +126,9 @@ class DBTestTask < Test::Unit::TestCase
     db(:t3, &p)
     DBTask[:t1].invoke
     assert_equal ["t1", "t2", "t3"], runs.sort
+    delete_task :t1
+    delete_task :t2
+    delete_task :t3
   end
 
   def test_task_list
@@ -160,7 +167,7 @@ class DBTestTask < Test::Unit::TestCase
     intern(:t2)
     intern(:t3)
     out = t1.investigation
-    assert_match(/class:\s*Rake::Task/, out)
+    assert_match(/class:\s*Rake::DBTask/, out)
     assert_match(/needed:\s*true/, out)
     assert_match(/pre-requisites:\s*--t2/, out)
   end
@@ -202,45 +209,51 @@ class TestTaskWithArguments < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
+  include DBTaskCreation
 
   def setup
-    Task.clear
+    DBTask.clear
   end
 
   def test_no_args_given
-    t = task :t
+    t = db :t
     assert_equal [], t.arg_names
+    delete_task :t
   end
 
   def test_args_given
-    t = task :t, :a, :b
+    t = db :t, :a, :b
     assert_equal [:a, :b], t.arg_names
+    delete_task :t
   end
 
   def test_name_and_needs
-    t = task(:t => [:pre])
+    t = db(:t => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
+    delete_task :t
   end
 
   def test_name_and_explicit_needs
-    t = task(:t, :needs => [:pre])
+    t = db(:t, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
+    delete_task :t
   end
 
   def test_name_args_and_explicit_needs
-    t = task(:t, :x, :y, :needs => [:pre])
+    t = db(:t, :x, :y, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [:x, :y], t.arg_names
     assert_equal ["pre"], t.prerequisites
+    delete_task :t
   end
 
   def test_illegal_keys_in_task_name_hash
     assert_raise RuntimeError do
-      t = task(:t, :x, :y => 1, :needs => [:pre])
+      t = db(:t, :x, :y => 1, :needs => [:pre])
     end
   end
 
@@ -252,7 +265,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_tasks_can_access_arguments_as_hash
-    t = task :t, :a, :b, :c do |tt, args|
+    t = db :t, :a, :b, :c do |tt, args|
       assert_equal({:a => 1, :b => 2, :c => 3}, args.to_hash)
       assert_equal 1, args[:a]
       assert_equal 2, args[:b]
@@ -262,6 +275,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
       assert_equal 3, args.c
     end
     t.invoke(1, 2, 3)
+    delete_task :t
   end
 
   def test_actions_of_various_arity_are_ok_with_args
@@ -274,7 +288,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
     end
     t.enhance do |task|
       notes << :c
-      assert_kind_of Task, task
+      assert_kind_of DBTask, task
     end
     t.enhance do |t2, args|
       notes << :d
@@ -302,17 +316,18 @@ class TestTaskWithArguments < Test::Unit::TestCase
 
   def test_arguments_are_passed_to_all_blocks
     counter = 0
-    t = task :t, :a
-    task :t do |tt, args|
+    t = db :t, :a
+    db :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
-    task :t do |tt, args|
+    db :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
     t.invoke(1)
     assert_equal 2, counter
+    delete_task :t
   end
 
   def test_block_with_no_parameters_is_ok
