@@ -6,7 +6,7 @@ module DBTaskCreation
     new_tasks.each do |new_task|
       while create_task(new_task) <= old_time + 1
         sleep(0.5)
-        Meta.find_by_task(new_task).destroy rescue nil
+        Meta.find_by_task(new_task.to_s).destroy rescue nil
       end
     end
   end
@@ -22,8 +22,5 @@ module DBTaskCreation
 
   def delete_task(name)
     Meta.find_by_task(name.to_s).destroy rescue nil
-    if ! Meta.find_by_task(name.to_s).nil?
-      STDERR.puts "DEBUG: == " + name.to_s
-    end
   end
 end

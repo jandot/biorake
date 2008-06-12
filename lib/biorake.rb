@@ -79,6 +79,8 @@ module Rake
           act.call(self, args)
         end
       end
+      
+      # And save the timestamp in the database
       meta_record = Meta.find_by_task(@name)
       if meta_record.nil?
         meta_record = Meta.new(:task => @name)
@@ -93,16 +95,16 @@ module Rake
       @prerequisites.any? { |n| application[n].timestamp > stamp}
     end
 
-    # ----------------------------------------------------------------
-    # Task class methods.
-    #
-    class << self
-      # Apply the scope to the task name according to the rules for this kind
-      # of task.  File based tasks ignore the scope when creating the name.
-      def scope_name(scope, task_name)
-        task_name
-      end
-    end
+#    # ----------------------------------------------------------------
+#    # Task class methods.
+#    #
+#    class << self
+#      # Apply the scope to the task name according to the rules for this kind
+#      # of task.  File based tasks ignore the scope when creating the name.
+#      def scope_name(scope, task_name)
+#        task_name
+#      end
+#    end
   end # class Rake::DBTask
 end
 

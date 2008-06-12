@@ -20,27 +20,46 @@ class Intensity < ActiveRecord::Base
   belongs_to :individual
 end
 
-#task :default => [:calculate_averages]
+task :default => [:calculate_averages]
 
-desc 'Load probes'
+desc 'Rebuild'
+task :rebuild => [:erase_all, :calculate_averages] do
+  STDERR.puts "Rebuilding the whole dataset..."
+end
+
+desc 'Erase all data'
+task :erase_all do
+  STDERR.puts "Deleting all information..."
+  # Delete the data
+  Intensity.delete_all
+  Individual.delete_all
+  Probe.delete_all
+  
+  # Delete the meta entries
+  Meta.delete_all
+end
+
+desc 'Load probes from file'
 db :load_probes do
+  STDERR.puts "Loading probes..."
   File.open('probes.txt').each do |line|
-    STDERR.puts "I'm on line " + line.chomp
     probe_name = line.chomp
     Probe.new(:name => probe_name).save!
   end
 end
 
-desc 'Load individuals'
+desc 'Load individuals from file'
 db :load_individuals do
+  STDERR.puts "Loading individuals..."
   File.open('individuals.txt').each do |line|
     ind_name = line.chomp
     Individual.new(:name => ind_name).save!
   end
 end
 
-desc 'Load intensities'
+desc 'Load intensities from file'
 db :load_intensities => [:load_probes, :load_individuals] do
+  STDERR.puts "Loading intensities..."
   File.open('intensities.txt').each do |line|
     probe_name, ind_name, value = line.chomp.split(/\t/)
     probe = Probe.find_by_name(probe_name)
@@ -49,10 +68,14 @@ db :load_intensities => [:load_probes, :load_individuals] do
   end
 end
 
-desc 'Calculate averages'
+desc 'Calculate averages for probes'
 db :calculate_averages => [:load_intensities] do
+  STDERR.puts "Calculating averages..."
   Probe.find(:all).each do |probe|
-    sum = probe.intensities.inject{|sum, n| sum + n}
+    sum = 0
+    probe.intensities.each do |i|
+      sum += i.value
+    end
     probe.avg = sum.to_f/probe.intensities.length.to_f
     probe.save!
   end

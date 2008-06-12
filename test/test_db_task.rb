@@ -188,7 +188,7 @@ class DBTestTask < Test::Unit::TestCase
     assert_match(/^\s*rev  -- Software/, t.full_comment)
     assert_match(/\A\s*This is a comment\.$/, t.full_comment)
   end
-
+  
   def test_multiple_comments
     desc "line one"
     t = intern(:t)
@@ -202,9 +202,16 @@ class DBTestTask < Test::Unit::TestCase
     t.comment = "HI"
     assert_equal "HI", t.comment
   end
+
+  def teardown
+    Meta.find(:all).each do |meta_record|
+      meta_record.destroy
+    end
+  end
+
 end
 
-######################################################################
+#####################################################################
 class TestTaskWithArguments < Test::Unit::TestCase
   include CaptureStdout
   include Rake
@@ -233,6 +240,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
     delete_task :t
+    delete_task :pre
   end
 
   def test_name_and_explicit_needs
@@ -249,12 +257,14 @@ class TestTaskWithArguments < Test::Unit::TestCase
     assert_equal [:x, :y], t.arg_names
     assert_equal ["pre"], t.prerequisites
     delete_task :t
+    delete_task :pre
   end
 
   def test_illegal_keys_in_task_name_hash
     assert_raise RuntimeError do
       t = db(:t, :x, :y => 1, :needs => [:pre])
     end
+    delete_task :pre
   end
 
   def test_arg_list_is_empty_if_no_args_given
@@ -368,5 +378,11 @@ class TestTaskWithArguments < Test::Unit::TestCase
     }
     t = intern(:t).enhance([:pre])
     t.invoke("bill", "1.2")
+  end
+  
+  def teardown
+    Meta.find(:all).each do |meta_record|
+      meta_record.destroy
+    end
   end
 end

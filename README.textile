@@ -84,10 +84,13 @@ I'm not able to fix yet.
 
 h1. Sample
 
-The sample/ directory contains an example of how this can be used. Suppose a
+The sample/ directory contains an example Rakefile. Suppose a
 researcher has intensities for a group of individuals on a number of probes. 
 This information should be loaded into a database with the tables _individuals_,
-_probes_ and _intensities_.
+_probes_ and _intensities_. (At the moment, you still have to create the 
+database and tables beforehand, though. The same goes for the little database
+with the meta table. There's a shell script that will do that for you, called 
+prepare_databases.sh.)
 
 As the _intensities_ table contains foreign keys for individual and probe, the
 _individuals_ and _probes_ tables have to be loaded *before* the intensities can
@@ -119,3 +122,7 @@ end
 
 Here, we call the database that will contain the data _example.sqlite3_. The 
 _meta_ table is contained in a separated database called _biorake.sqlite3_.
+
+Try a _rake -T_...
+
+
