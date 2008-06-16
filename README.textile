@@ -79,8 +79,9 @@ itself?
 
 h1. Status
 
-At the moment, this extension does _not_ work yet. There are some glitches that
-I'm not able to fix yet.
+Even though the tests seem to run and I've tried some things out, I can't 
+guarantee production-level stability (well: call it beta). Use at your own
+risk.
 
 h1. Sample
 
