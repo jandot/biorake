@@ -6,13 +6,13 @@ module DBTaskCreation
     new_tasks.each do |new_task|
       while create_task(new_task) <= old_time + 1
         sleep(0.5)
-        Meta.find_by_task(new_task.to_s).destroy rescue nil
+        Meta.first(:task => new_task.to_s).destroy rescue nil
       end
     end
   end
 
   def create_task(name)
-    meta_record = Meta.find_by_task(name)
+    meta_record = Meta.first(:task => name.to_s)
     if meta_record.nil?
       meta_record = Meta.new(:task => name.to_s)
       meta_record.save!
@@ -21,6 +21,6 @@ module DBTaskCreation
   end
 
   def delete_task(name)
-    Meta.find_by_task(name.to_s).destroy rescue nil
+    Meta.first(:task => name.to_s).destroy rescue nil
   end
 end

@@ -1,32 +1,32 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'rake'
-require 'activerecord'
+require 'data_mapper'
 
 #######################################################
 # Connection to database that contains task timestamps
 #######################################################
 
-class BioRakeConnection < ActiveRecord::Base
-  self.abstract_class = true
-  
-  establish_connection(
-    :adapter => 'sqlite3',
-    :database => 'biorake.sqlite3'
-  )
-end
+DataMapper::Database.setup(
+  :adapter => 'sqlite3',
+  :database => 'biorake.sqlite3'
+)
 
-class Meta < BioRakeConnection
+class Meta < DataMapper::Base
   set_table_name 'meta'
   
+  property :task, :string
+  property :updated_at, :datetime
+  
   def self.exist?(name)
-    if Meta.find_by_task(name).nil?
+    if Meta.first(:task => name.to_s).nil?
       return false
     else
       return true
     end
   end
 end
+Meta.auto_migrate!
 
 ##########################
 # Extension of rake
@@ -46,7 +46,7 @@ module Rake
     # Is this data task needed?  Yes if it doesn't exist, or if its time stamp
     # is out of date.
     def needed?
-      meta_record = Meta.find_by_task(name)
+      meta_record = Meta.first(:task => name.to_s)
       return true if meta_record.nil?
       return true if out_of_date?(timestamp)
       false
@@ -54,7 +54,7 @@ module Rake
 
     # Time stamp for data task.
     def timestamp
-      meta_record = Meta.find_by_task(name)
+      meta_record = Meta.first(:task => name.to_s)
       if ! meta_record.nil?
         meta_record.updated_at
       else
@@ -64,13 +64,13 @@ module Rake
 
     def execute(args)
       if application.options.dryrun
-        puts "** Execute (dry run) #{name}"
+        puts "** Execute (dry run) #{name.to_s}"
         return
       end
       if application.options.trace
-        puts "** Execute #{name}"
+        puts "** Execute #{name.to_s}"
       end
-      application.enhance_with_matching_rule(name) if @actions.empty?
+      application.enhance_with_matching_rule(name.to_s) if @actions.empty?
       @actions.each do |act|
         case act.arity
         when 1
@@ -81,9 +81,9 @@ module Rake
       end
       
       # And save the timestamp in the database
-      meta_record = Meta.find_by_task(@name)
+      meta_record = Meta.first(:task => @name.to_s)
       if meta_record.nil?
-        meta_record = Meta.new(:task => @name)
+        meta_record = Meta.new(:task => @name.to_s)
       end
       meta_record.save!
     end
