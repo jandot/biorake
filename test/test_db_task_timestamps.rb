@@ -101,7 +101,7 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
   
   def teardown
     Meta.find(:all).each do |meta_record|
-      meta_record.destroy
+      meta_record.destroy!
     end
   end
 end
