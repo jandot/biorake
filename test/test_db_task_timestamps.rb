@@ -33,7 +33,7 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
     db name_2
     db_task = DBTask[name_2]
     assert db_task.needed?, 'task should be needed'
-    Meta.new(:task => name_2.to_s).save!
+    Meta.new(:task => name_2.to_s).save
     assert_equal nil, db_task.prerequisites.collect{|n| DBTask[n].timestamp}.max
     assert ! db_task.needed?, "task should not be needed"
   end
@@ -61,22 +61,22 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
 
   def test_number_of_meta_entries
     create_timed_db_tasks(:old_number_of_meta_entries, :new_number_of_meta_entries)
-    assert_equal(1, Meta.find_all_by_task('old_number_of_meta_entries').length)
-    assert_equal(1, Meta.find_all_by_task('new_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'old_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'new_number_of_meta_entries').length)
     
     db :old_number_of_meta_entries => [:new_number_of_meta_entries] do |t| @runs << t.name end
     db :new_number_of_meta_entries do |t| @runs << t.name end
-    assert_equal(1, Meta.find_all_by_task('old_number_of_meta_entries').length)
-    assert_equal(1, Meta.find_all_by_task('new_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'old_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'new_number_of_meta_entries').length)
     
     t1 = Rake.application.intern(DBTask, :old_number_of_meta_entries).enhance([:new_number_of_meta_entries])
     t2 = Rake.application.intern(DBTask, :new_nmber_of_meta_entries)
-    assert_equal(1, Meta.find_all_by_task('old_number_of_meta_entries').length)
-    assert_equal(1, Meta.find_all_by_task('new_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'old_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'new_number_of_meta_entries').length)
 
     DBTask[:old_number_of_meta_entries].invoke
-    assert_equal(1, Meta.find_all_by_task('old_number_of_meta_entries').length)
-    assert_equal(1, Meta.find_all_by_task('new_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'old_number_of_meta_entries').length)
+    assert_equal(1, Meta.all(:task => 'new_number_of_meta_entries').length)
   end
 
   def test_db_depends_on_task_depend_on_db
@@ -99,9 +99,9 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
     assert_nothing_raised do DBTask[:old_existing_db_task_depends_on_non_existing_db_task].invoke end
   end
   
-  def teardown
-    Meta.find(:all).each do |meta_record|
-      meta_record.destroy!
-    end
-  end
+#  def teardown
+#    Meta.all.each do |meta_record|
+#      meta_record.destroy
+#    end
+#  end
 end
