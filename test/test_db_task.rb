@@ -204,7 +204,7 @@ class DBTestTask < Test::Unit::TestCase
   end
 
   def teardown
-    Meta.find(:all).each do |meta_record|
+    Meta.all.each do |meta_record|
       meta_record.destroy!
     end
   end
@@ -381,7 +381,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
   
   def teardown
-    Meta.find(:all).each do |meta_record|
+    Meta.all.each do |meta_record|
       meta_record.destroy!
     end
   end

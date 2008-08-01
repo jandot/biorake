@@ -1,21 +1,22 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'rake'
-require 'data_mapper'
+require 'dm-core'
 
 #######################################################
 # Connection to database that contains task timestamps
 #######################################################
 
-DataMapper::Database.setup(
-  :adapter => 'sqlite3',
-  :database => 'biorake.sqlite3'
-)
-class Meta < DataMapper::Base
-  set_table_name 'meta'
+DataMapper.setup(:default, 'sqlite3:/biorake.sqlite3')
+
+class Meta
+  include DataMapper::Resource
   
-  property :task, :string
-  property :updated_at, :datetime
+  storage_names[:default] = 'meta'
+  
+  property :id,         Integer,   :serial => true
+  property :task,       String
+  property :updated_at, DateTime
   
   def self.exist?(name)
     if Meta.first(:task => name.to_s).nil?
@@ -84,7 +85,7 @@ module Rake
       if meta_record.nil?
         meta_record = Meta.new(:task => @name.to_s)
       end
-      meta_record.save!
+      meta_record.save
     end
 
     private
@@ -113,7 +114,7 @@ end
 #   db :load_probes => [:load_individuals] do
 #     File.open("my_file.txt").each do |line|
 #       probe_name, individual_id = line.chomp.split(/\t/)
-#       Probe.new(:name => probe_name, :individual_id => individual_id).new.save!
+#       Probe.new(:name => probe_name, :individual_id => individual_id).new.save
 #     end
 #   end
 def db(*args, &block)
