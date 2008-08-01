@@ -8,7 +8,7 @@ require 'dm-timestamps'
 # Connection to database that contains task timestamps
 #######################################################
 
-DataMapper.setup(:default, 'sqlite3:/biorake.sqlite3')
+DataMapper.setup(:default, 'sqlite3:biorake.sqlite3')
 
 class Meta
   include DataMapper::Resource
