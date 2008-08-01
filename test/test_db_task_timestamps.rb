@@ -99,9 +99,9 @@ class TestDBTaskTimeStamp < Test::Unit::TestCase
     assert_nothing_raised do DBTask[:old_existing_db_task_depends_on_non_existing_db_task].invoke end
   end
   
-#  def teardown
-#    Meta.all.each do |meta_record|
-#      meta_record.destroy
-#    end
-#  end
+  def teardown
+    Meta.all.each do |meta_record|
+      meta_record.destroy
+    end
+  end
 end
