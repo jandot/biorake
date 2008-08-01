@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'rake'
 require 'dm-core'
+require 'dm-timestamps'
 
 #######################################################
 # Connection to database that contains task timestamps
@@ -46,7 +47,7 @@ module Rake
     # Is this data task needed?  Yes if it doesn't exist, or if its time stamp
     # is out of date.
     def needed?
-      meta_record = Meta.first(:task => name.to_s)
+      meta_record = Meta.first(:task => @name.to_s)
       return true if meta_record.nil?
       return true if out_of_date?(timestamp)
       false
@@ -54,7 +55,7 @@ module Rake
 
     # Time stamp for data task.
     def timestamp
-      meta_record = Meta.first(:task => name.to_s)
+      meta_record = Meta.first(:task => @name.to_s)
       if ! meta_record.nil?
         meta_record.updated_at
       else
