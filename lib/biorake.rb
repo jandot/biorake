@@ -36,13 +36,13 @@ Meta.auto_migrate!
 module Rake
 
   # #########################################################################
-  # A DBTask is a task that includes time based dependencies. Timestamps
+  # A DataTask is a task that includes time based dependencies. Timestamps
   # are contained in a meta_rake table in the database. If any of a
   # DataTask's prerequisites have a timestamp that is later than the
   # represented by this task, then the file must be rebuilt (using the
   # supplied actions).
   #
-  class DBTask < Task
+  class DataTask < Task
 
     # Is this data task needed?  Yes if it doesn't exist, or if its time stamp
     # is out of date.
@@ -106,19 +106,19 @@ module Rake
 #        task_name
 #      end
 #    end
-  end # class Rake::DBTask
+  end # class Rake::DataTask
 end
 
 # Declare a data task.
 #
 # Example:
-#   db :load_probes => [:load_individuals] do
+#   data :load_probes => [:load_individuals] do
 #     File.open("my_file.txt").each do |line|
 #       probe_name, individual_id = line.chomp.split(/\t/)
 #       Probe.new(:name => probe_name, :individual_id => individual_id).new.save
 #     end
 #   end
-def db(*args, &block)
-  Rake::DBTask.define_task(*args, &block)
+def data(*args, &block)
+  Rake::DataTask.define_task(*args, &block)
 end
 

@@ -1,6 +1,6 @@
-module DBTaskCreation
+module DataTaskCreation
 
-  def create_timed_db_tasks(old_task, *new_tasks)
+  def create_timed_data_tasks(old_task, *new_tasks)
     return if Meta.exist?(old_task) && new_tasks.all? { |new_task| File.exist?(new_task) }
 
     old_time = create_task(old_task)

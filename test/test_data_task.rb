@@ -6,26 +6,26 @@ require 'test/unit'
 require '../lib/biorake'
 require 'filecreation.rb'
 require 'capture_stdout.rb'
-require 'dbtaskcreation'
+require 'datataskcreation'
 
 
 module Interning
   private
 
   def intern(name, *args)
-    Rake.application.define_task(Rake::DBTask, name, *args)
+    Rake.application.define_task(Rake::DataTask, name, *args)
   end
 end
 
 ######################################################################
-class DBTestTask < Test::Unit::TestCase
+class DataTestTask < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
-  include DBTaskCreation
+  include DataTaskCreation
 
   def setup
-    DBTask.clear
+    DataTask.clear
   end
 
   def test_create
@@ -43,7 +43,7 @@ class DBTestTask < Test::Unit::TestCase
 
   def test_inspect
     t = intern(:foo).enhance([:bar, :baz])
-    assert_equal "<Rake::DBTask foo => [bar, baz]>", t.inspect
+    assert_equal "<Rake::DataTask foo => [bar, baz]>", t.inspect
   end
 
   def test_invoke
@@ -104,27 +104,27 @@ class DBTestTask < Test::Unit::TestCase
   end
 
   def test_find
-    db :tfind
-    assert_equal "tfind", DBTask[:tfind].name
-    ex = assert_raise(RuntimeError) { DBTask[:leaves] }
+    data :tfind
+    assert_equal "tfind", DataTask[:tfind].name
+    ex = assert_raise(RuntimeError) { DataTask[:leaves] }
     assert_equal "Don't know how to build task 'leaves'", ex.message
     delete_task(:tfind)
   end
 
   def test_defined
-    assert ! DBTask.task_defined?(:a)
-    db :a
-    assert DBTask.task_defined?(:a)
+    assert ! DataTask.task_defined?(:a)
+    data :a
+    assert DataTask.task_defined?(:a)
     delete_task :a
   end
 
   def test_multi_invocations
     runs = []
     p = proc do |t| runs << t.name end
-    db({:t1=>[:t2,:t3]}, &p)
-    db({:t2=>[:t3]}, &p)
-    db(:t3, &p)
-    DBTask[:t1].invoke
+    data({:t1=>[:t2,:t3]}, &p)
+    data({:t2=>[:t3]}, &p)
+    data(:t3, &p)
+    DataTask[:t1].invoke
     assert_equal ["t1", "t2", "t3"], runs.sort
     delete_task :t1
     delete_task :t2
@@ -167,7 +167,7 @@ class DBTestTask < Test::Unit::TestCase
     intern(:t2)
     intern(:t3)
     out = t1.investigation
-    assert_match(/class:\s*Rake::DBTask/, out)
+    assert_match(/class:\s*Rake::DataTask/, out)
     assert_match(/needed:\s*true/, out)
     assert_match(/pre-requisites:\s*--t2/, out)
   end
@@ -216,26 +216,26 @@ class TestTaskWithArguments < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
-  include DBTaskCreation
+  include DataTaskCreation
 
   def setup
-    DBTask.clear
+    DataTask.clear
   end
 
   def test_no_args_given
-    t = db :t
+    t = data :t
     assert_equal [], t.arg_names
     delete_task :t
   end
 
   def test_args_given
-    t = db :t, :a, :b
+    t = data :t, :a, :b
     assert_equal [:a, :b], t.arg_names
     delete_task :t
   end
 
   def test_name_and_needs
-    t = db(:t => [:pre])
+    t = data(:t => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -244,7 +244,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_name_and_explicit_needs
-    t = db(:t, :needs => [:pre])
+    t = data(:t, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -252,7 +252,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_name_args_and_explicit_needs
-    t = db(:t, :x, :y, :needs => [:pre])
+    t = data(:t, :x, :y, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [:x, :y], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -262,7 +262,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
 
   def test_illegal_keys_in_task_name_hash
     assert_raise RuntimeError do
-      t = db(:t, :x, :y => 1, :needs => [:pre])
+      t = data(:t, :x, :y => 1, :needs => [:pre])
     end
     delete_task :pre
   end
@@ -275,7 +275,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_tasks_can_access_arguments_as_hash
-    t = db :t, :a, :b, :c do |tt, args|
+    t = data :t, :a, :b, :c do |tt, args|
       assert_equal({:a => 1, :b => 2, :c => 3}, args.to_hash)
       assert_equal 1, args[:a]
       assert_equal 2, args[:b]
@@ -298,7 +298,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
     end
     t.enhance do |task|
       notes << :c
-      assert_kind_of DBTask, task
+      assert_kind_of DataTask, task
     end
     t.enhance do |t2, args|
       notes << :d
@@ -326,12 +326,12 @@ class TestTaskWithArguments < Test::Unit::TestCase
 
   def test_arguments_are_passed_to_all_blocks
     counter = 0
-    t = db :t, :a
-    db :t do |tt, args|
+    t = data :t, :a
+    data :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
-    db :t do |tt, args|
+    data :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
