@@ -8,16 +8,20 @@ require 'dm-timestamps'
 # Connection to database that contains task timestamps
 #######################################################
 
-DataMapper.setup(:default, 'sqlite3:biorake.sqlite3')
+DataMapper.setup(:meta, 'sqlite3:biorake.sqlite3')
 
 class Meta
   include DataMapper::Resource
   
-  storage_names[:default] = 'meta'
+  storage_names[:meta] = 'meta'
   
   property :id,         Integer,   :serial => true
   property :task,       String
   property :updated_at, DateTime
+  
+  def self.default_repository_name
+    :meta
+  end
   
   def self.exist?(name)
     if Meta.first(:task => name.to_s).nil?
