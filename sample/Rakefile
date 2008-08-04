@@ -1,24 +1,43 @@
 require '../lib/biorake.rb'
 
-ActiveRecord::Base.establish_connection(
-  :adapter => 'sqlite3',
-  :database => 'example.sqlite3'
-)
+DataMapper.setup(:default, 'sqlite3:sample.sqlite3')
 
-class Probe < ActiveRecord::Base
-  has_many :intensities
-  has_many :individuals, :through => :intensity
+class Probe
+  include DataMapper::Resource
+  
+  property :id, Integer, :serial => true
+  property :name, String
+  property :avg, Float
+  
+  has n, :intensities
+  has n, :individuals, :through => :intensities
 end
 
-class Individual < ActiveRecord::Base
-  has_many :intensities
-  has_many :probes, :through => :intensity
+class Individual
+  include DataMapper::Resource
+  
+  property :id, Integer, :serial => true
+  property :name, String
+  
+  has n, :intensities
+  has n, :probes, :through => :intensities
 end
 
-class Intensity < ActiveRecord::Base
+class Intensity
+  include DataMapper::Resource
+  
+  property :id, Integer, :serial => true
+  property :probe_id, Integer
+  property :individual_id, Integer
+  property :value, Float
+  
   belongs_to :probe
   belongs_to :individual
 end
+
+Probe.auto_migrate!
+Individual.auto_migrate!
+Intensity.auto_migrate!
 
 task :default => [:calculate_averages]
 
@@ -31,52 +50,52 @@ desc 'Erase all data'
 task :erase_all do
   STDERR.puts "Deleting all information..."
   # Delete the data
-  Intensity.delete_all
-  Individual.delete_all
-  Probe.delete_all
+  Intensity.all.destroy!
+  Individual.all.destroy!
+  Probe.all.destroy!
   
   # Delete the meta entries
-  Meta.delete_all
+  Meta.all.destroy!
 end
 
 desc 'Load probes from file'
-db :load_probes do
+data :load_probes => 'probes.txt' do
   STDERR.puts "Loading probes..."
   File.open('probes.txt').each do |line|
     probe_name = line.chomp
-    Probe.new(:name => probe_name).save!
+    Probe.new(:name => probe_name).save
   end
 end
 
 desc 'Load individuals from file'
-db :load_individuals do
+data :load_individuals => 'individuals.txt' do
   STDERR.puts "Loading individuals..."
   File.open('individuals.txt').each do |line|
     ind_name = line.chomp
-    Individual.new(:name => ind_name).save!
+    Individual.new(:name => ind_name).save
   end
 end
 
 desc 'Load intensities from file'
-db :load_intensities => [:load_probes, :load_individuals] do
+data :load_intensities => ['intensities.txt', :load_probes, :load_individuals] do
   STDERR.puts "Loading intensities..."
   File.open('intensities.txt').each do |line|
     probe_name, ind_name, value = line.chomp.split(/\t/)
-    probe = Probe.find_by_name(probe_name)
-    ind = Individual.find_by_name(ind_name)
-    Intensity.new(:probe_id => probe.id, :individual_id => ind.id, :value => value.to_f).save!
+    probe = Probe.first(:name => probe_name)
+    ind = Individual.first(:name => ind_name)
+    Intensity.new(:probe_id => probe.id, :individual_id => ind.id, :value => value.to_f).save
   end
 end
 
 desc 'Calculate averages for probes'
-db :calculate_averages => [:load_intensities] do
+data :calculate_averages => [:load_intensities] do
   STDERR.puts "Calculating averages..."
-  Probe.find(:all).each do |probe|
+  Probe.all.each do |probe|
     sum = 0
     probe.intensities.each do |i|
       sum += i.value
     end
     probe.avg = sum.to_f/probe.intensities.length.to_f
-    probe.save!
+    probe.save
   end
 end
