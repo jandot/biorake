@@ -35,9 +35,9 @@ class Intensity
   belongs_to :individual
 end
 
-Probe.auto_migrate!
-Individual.auto_migrate!
-Intensity.auto_migrate!
+Probe.auto_migrate!# if Probe.all.nil?
+Individual.auto_migrate!# if Individual.all.nil?
+Intensity.auto_migrate!# if Intensity.all.nil?
 
 task :default => [:calculate_averages]
 
@@ -61,6 +61,7 @@ end
 desc 'Load probes from file'
 data :load_probes => 'probes.txt' do
   STDERR.puts "Loading probes..."
+  Probe.all.destroy!
   File.open('probes.txt').each do |line|
     probe_name = line.chomp
     Probe.new(:name => probe_name).save
@@ -70,6 +71,7 @@ end
 desc 'Load individuals from file'
 data :load_individuals => 'individuals.txt' do
   STDERR.puts "Loading individuals..."
+  Individual.all.destroy!
   File.open('individuals.txt').each do |line|
     ind_name = line.chomp
     Individual.new(:name => ind_name).save
@@ -79,6 +81,7 @@ end
 desc 'Load intensities from file'
 data :load_intensities => ['intensities.txt', :load_probes, :load_individuals] do
   STDERR.puts "Loading intensities..."
+  Intensity.all.destroy!
   File.open('intensities.txt').each do |line|
     probe_name, ind_name, value = line.chomp.split(/\t/)
     probe = Probe.first(:name => probe_name)
