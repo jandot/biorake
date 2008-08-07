@@ -35,9 +35,9 @@ class Intensity
   belongs_to :individual
 end
 
-Probe.auto_migrate!# if Probe.all.nil?
-Individual.auto_migrate!# if Individual.all.nil?
-Intensity.auto_migrate!# if Intensity.all.nil?
+Probe.auto_migrate! if Probe.all.nil?
+Individual.auto_migrate! if Individual.all.nil?
+Intensity.auto_migrate! if Intensity.all.nil?
 
 task :default => [:calculate_averages]
 

@@ -31,7 +31,8 @@ class Meta
     end
   end
 end
-Meta.auto_migrate!
+
+Meta.auto_migrate! if ! File.exists?('biorake.sqlite3')
 
 ##########################
 # Extension of rake
