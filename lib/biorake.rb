@@ -17,7 +17,7 @@ class Meta
   
   property :id,         Integer,   :serial => true
   property :task,       String
-  property :updated_at, DateTime
+  property :updated_at, Time
   
   def self.default_repository_name
     :meta
