@@ -68,24 +68,8 @@ module Rake
       end
     end
 
-    def execute(args)
-      if application.options.dryrun
-        puts "** Execute (dry run) #{name.to_s}"
-        return
-      end
-      if application.options.trace
-        puts "** Execute #{name.to_s}"
-      end
-      application.enhance_with_matching_rule(name.to_s) if @actions.empty?
-      @actions.each do |act|
-        case act.arity
-        when 1
-          act.call(self)
-        else
-          act.call(self, args)
-        end
-      end
-      
+    def execute(args=nil)
+      super(args)
       # And save the timestamp in the database
       meta_record = Meta.first(:task => @name.to_s)
       if meta_record.nil?
