@@ -54,7 +54,7 @@ module Rake
     def needed?
       meta_record = Meta.first(:task => @name.to_s)
       return true if meta_record.nil?
-      return true if out_of_date?(timestamp)
+      return true if out_of_date?(meta_record.updated_at)
       false
     end
 
