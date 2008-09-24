@@ -67,6 +67,6 @@ class EventTestTask < Test::Unit::TestCase
   end
   
   def teardown
-    rm_rf ".rake"
+    Rake::EventTask.clean
   end
 end

@@ -1,3 +1,6 @@
+task :default => :test
+
+desc "Run all the tests"
 task :test do
   Dir.chdir("test") do
     ruby "test_event_task.rb"

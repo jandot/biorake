@@ -204,7 +204,7 @@ class EventTestTask < Test::Unit::TestCase
   end
 
   def teardown
-    rm_rf ".rake"
+    EventTask.clean
   end
 
 end
@@ -379,6 +379,6 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
   
   def teardown
-    rm_rf ".rake"
+    EventTask.clean
   end
 end
