@@ -4,16 +4,16 @@ require 'pathname'
 require 'test/unit'
 #require 'fileutils'
 require '../lib/biorake'
-require 'filecreation.rb'
+require 'file_creation.rb'
 require 'capture_stdout.rb'
-require 'datataskcreation'
+require 'event_task_creation'
 
 
 module Interning
   private
 
-  def data_intern(name, *args)
-    Rake.application.define_task(Rake::DataTask, name, *args)
+  def event_intern(name, *args)
+    Rake.application.define_task(Rake::EventTask, name, *args)
   end
   
   def file_intern(name, *args)
@@ -23,22 +23,22 @@ module Interning
 end
 
 ######################################################################
-class DataTestTask < Test::Unit::TestCase
+class EventTestTask < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
-  include DataTaskCreation
+  include EventTaskCreation
 
   def setup
-    DataTask.clear
+    EventTask.clear
     FileTask.clear
   end
 
   def test_invoke
     runlist = []
-    t1 = data_intern(:t1).enhance([:t2, :t3]) { |t| runlist << t.name; 3321 }
+    t1 = event_intern(:t1).enhance([:t2, :t3]) { |t| runlist << t.name; 3321 }
     t2 = file_intern(:t2).enhance { |t| runlist << t.name }
-    t3 = data_intern(:t3).enhance { |t| runlist << t.name }
+    t3 = event_intern(:t3).enhance { |t| runlist << t.name }
     assert_equal [:t2, :t3], t1.prerequisites
     t1.invoke
     assert_equal ["t2", "t3", "t1"], runlist
@@ -46,7 +46,7 @@ class DataTestTask < Test::Unit::TestCase
 
   def test_invoke_with_circular_dependencies
     runlist = []
-    t1 = data_intern(:t1).enhance([:t2]) { |t| runlist << t.name; 3321 }
+    t1 = event_intern(:t1).enhance([:t2]) { |t| runlist << t.name; 3321 }
     t2 = file_intern(:t2).enhance([:t1]) { |t| runlist << t.name }
     assert_equal [:t2], t1.prerequisites
     assert_equal [:t1], t2.prerequisites
@@ -59,16 +59,14 @@ class DataTestTask < Test::Unit::TestCase
 
   def test_no_double_invoke
     runlist = []
-    t1 = data_intern(:t1).enhance([:t2, :t3]) { |t| runlist << t.name; 3321 }
-    t2 = data_intern(:t2).enhance([:t3]) { |t| runlist << t.name }
-    t3 = data_intern(:t3).enhance { |t| runlist << t.name }
+    t1 = event_intern(:t1).enhance([:t2, :t3]) { |t| runlist << t.name; 3321 }
+    t2 = event_intern(:t2).enhance([:t3]) { |t| runlist << t.name }
+    t3 = event_intern(:t3).enhance { |t| runlist << t.name }
     t1.invoke
     assert_equal ["t3", "t2", "t1"], runlist
   end
   
   def teardown
-    Meta.all.each do |meta_record|
-      meta_record.destroy
-    end
+    rm_rf ".rake"
   end
 end

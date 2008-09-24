@@ -4,28 +4,28 @@ require 'pathname'
 require 'test/unit'
 #require 'fileutils'
 require '../lib/biorake'
-require 'filecreation.rb'
+require 'file_creation.rb'
 require 'capture_stdout.rb'
-require 'datataskcreation'
+require 'event_task_creation'
 
 
 module Interning
   private
 
   def intern(name, *args)
-    Rake.application.define_task(Rake::DataTask, name, *args)
+    Rake.application.define_task(Rake::EventTask, name, *args)
   end
 end
 
 ######################################################################
-class DataTestTask < Test::Unit::TestCase
+class EventTestTask < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
-  include DataTaskCreation
+  include EventTaskCreation
 
   def setup
-    DataTask.clear
+    EventTask.clear
   end
 
   def test_create
@@ -43,7 +43,7 @@ class DataTestTask < Test::Unit::TestCase
 
   def test_inspect
     t = intern(:foo).enhance([:bar, :baz])
-    assert_equal "<Rake::DataTask foo => [bar, baz]>", t.inspect
+    assert_equal "<Rake::EventTask foo => [bar, baz]>", t.inspect
   end
 
   def test_invoke
@@ -104,27 +104,27 @@ class DataTestTask < Test::Unit::TestCase
   end
 
   def test_find
-    data :tfind
-    assert_equal "tfind", DataTask[:tfind].name
-    ex = assert_raise(RuntimeError) { DataTask[:leaves] }
+    event :tfind
+    assert_equal "tfind", EventTask[:tfind].name
+    ex = assert_raise(RuntimeError) { EventTask[:leaves] }
     assert_equal "Don't know how to build task 'leaves'", ex.message
     delete_task(:tfind)
   end
 
   def test_defined
-    assert ! DataTask.task_defined?(:a)
-    data :a
-    assert DataTask.task_defined?(:a)
+    assert ! EventTask.task_defined?(:a)
+    event :a
+    assert EventTask.task_defined?(:a)
     delete_task :a
   end
 
   def test_multi_invocations
     runs = []
     p = proc do |t| runs << t.name end
-    data({:t1=>[:t2,:t3]}, &p)
-    data({:t2=>[:t3]}, &p)
-    data(:t3, &p)
-    DataTask[:t1].invoke
+    event({:t1=>[:t2,:t3]}, &p)
+    event({:t2=>[:t3]}, &p)
+    event(:t3, &p)
+    EventTask[:t1].invoke
     assert_equal ["t1", "t2", "t3"], runs.sort
     delete_task :t1
     delete_task :t2
@@ -167,7 +167,7 @@ class DataTestTask < Test::Unit::TestCase
     intern(:t2)
     intern(:t3)
     out = t1.investigation
-    assert_match(/class:\s*Rake::DataTask/, out)
+    assert_match(/class:\s*Rake::EventTask/, out)
     assert_match(/needed:\s*true/, out)
     assert_match(/pre-requisites:\s*--t2/, out)
   end
@@ -204,9 +204,7 @@ class DataTestTask < Test::Unit::TestCase
   end
 
   def teardown
-    Meta.all.each do |meta_record|
-      meta_record.destroy
-    end
+    rm_rf ".rake"
   end
 
 end
@@ -216,26 +214,26 @@ class TestTaskWithArguments < Test::Unit::TestCase
   include CaptureStdout
   include Rake
   include Interning
-  include DataTaskCreation
+  include EventTaskCreation
 
   def setup
-    DataTask.clear
+    EventTask.clear
   end
 
   def test_no_args_given
-    t = data :t
+    t = event :t
     assert_equal [], t.arg_names
     delete_task :t
   end
 
   def test_args_given
-    t = data :t, :a, :b
+    t = event :t, :a, :b
     assert_equal [:a, :b], t.arg_names
     delete_task :t
   end
 
   def test_name_and_needs
-    t = data(:t => [:pre])
+    t = event(:t => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -244,7 +242,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_name_and_explicit_needs
-    t = data(:t, :needs => [:pre])
+    t = event(:t, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -252,7 +250,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_name_args_and_explicit_needs
-    t = data(:t, :x, :y, :needs => [:pre])
+    t = event(:t, :x, :y, :needs => [:pre])
     assert_equal "t", t.name
     assert_equal [:x, :y], t.arg_names
     assert_equal ["pre"], t.prerequisites
@@ -262,7 +260,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
 
   def test_illegal_keys_in_task_name_hash
     assert_raise RuntimeError do
-      t = data(:t, :x, :y => 1, :needs => [:pre])
+      t = event(:t, :x, :y => 1, :needs => [:pre])
     end
     delete_task :pre
   end
@@ -275,7 +273,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
 
   def test_tasks_can_access_arguments_as_hash
-    t = data :t, :a, :b, :c do |tt, args|
+    t = event :t, :a, :b, :c do |tt, args|
       assert_equal({:a => 1, :b => 2, :c => 3}, args.to_hash)
       assert_equal 1, args[:a]
       assert_equal 2, args[:b]
@@ -298,7 +296,7 @@ class TestTaskWithArguments < Test::Unit::TestCase
     end
     t.enhance do |task|
       notes << :c
-      assert_kind_of DataTask, task
+      assert_kind_of EventTask, task
     end
     t.enhance do |t2, args|
       notes << :d
@@ -326,12 +324,12 @@ class TestTaskWithArguments < Test::Unit::TestCase
 
   def test_arguments_are_passed_to_all_blocks
     counter = 0
-    t = data :t, :a
-    data :t do |tt, args|
+    t = event :t, :a
+    event :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
-    data :t do |tt, args|
+    event :t do |tt, args|
       assert_equal 1, args.a
       counter += 1
     end
@@ -381,8 +379,6 @@ class TestTaskWithArguments < Test::Unit::TestCase
   end
   
   def teardown
-    Meta.all.each do |meta_record|
-      meta_record.destroy
-    end
+    rm_rf ".rake"
   end
 end

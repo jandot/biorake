@@ -1,4 +1,5 @@
 require '../lib/biorake.rb'
+require 'dm-core'
 
 DataMapper.setup(:default, 'sqlite3:sample.sqlite3')
 
@@ -35,31 +36,29 @@ class Intensity
   belongs_to :individual
 end
 
-Probe.auto_migrate! if Probe.all.nil?
-Individual.auto_migrate! if Individual.all.nil?
-Intensity.auto_migrate! if Intensity.all.nil?
-
 task :default => [:calculate_averages]
 
+desc "Create the database" 
+event :create_database do
+  STDERR.puts "Creating the database..."
+  Probe.auto_migrate! 
+  Individual.auto_migrate! 
+  Intensity.auto_migrate! 
+end
+
 desc 'Rebuild'
-task :rebuild => [:erase_all, :calculate_averages] do
+task :rebuild => [:clean, :calculate_averages] do
   STDERR.puts "Rebuilding the whole dataset..."
 end
 
-desc 'Erase all data'
-task :erase_all do
-  STDERR.puts "Deleting all information..."
-  # Delete the data
-  Intensity.all.destroy!
-  Individual.all.destroy!
-  Probe.all.destroy!
-  
-  # Delete the meta entries
-  Meta.all.destroy!
+desc "start from scratch"
+task :clean do
+  rm_rf "sample.sqlite3"
+  Rake::EventTask.clean
 end
 
 desc 'Load probes from file'
-data :load_probes => 'probes.txt' do
+event :load_probes => ['probes.txt',:create_database] do
   STDERR.puts "Loading probes..."
   Probe.all.destroy!
   File.open('probes.txt').each do |line|
@@ -69,7 +68,7 @@ data :load_probes => 'probes.txt' do
 end
 
 desc 'Load individuals from file'
-data :load_individuals => 'individuals.txt' do
+event :load_individuals => ['individuals.txt',:create_database] do
   STDERR.puts "Loading individuals..."
   Individual.all.destroy!
   File.open('individuals.txt').each do |line|
@@ -79,7 +78,7 @@ data :load_individuals => 'individuals.txt' do
 end
 
 desc 'Load intensities from file'
-data :load_intensities => ['intensities.txt', :load_probes, :load_individuals] do
+event :load_intensities => ['intensities.txt', :load_probes, :load_individuals] do
   STDERR.puts "Loading intensities..."
   Intensity.all.destroy!
   File.open('intensities.txt').each do |line|
@@ -91,7 +90,7 @@ data :load_intensities => ['intensities.txt', :load_probes, :load_individuals] d
 end
 
 desc 'Calculate averages for probes'
-data :calculate_averages => [:load_intensities] do
+event :calculate_averages => [:load_intensities] do
   STDERR.puts "Calculating averages..."
   Probe.all.each do |probe|
     sum = 0
