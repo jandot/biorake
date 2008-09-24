@@ -24,11 +24,7 @@ class Meta
   end
   
   def self.exist?(name)
-    if Meta.first(:task => name.to_s).nil?
-      return false
-    else
-      return true
-    end
+    !Meta.first(:task => name.to_s).nil?
   end
 end
 
@@ -59,9 +55,8 @@ module Rake
     end
 
     # Time stamp for data task.
-    def timestamp
-      meta_record = Meta.first(:task => @name.to_s)
-      if ! meta_record.nil?
+    def timestamp      
+      if(meta_record = Meta.first(:task => @name.to_s))
         meta_record.updated_at
       else
         Rake::EARLY
@@ -84,17 +79,6 @@ module Rake
     def out_of_date?(stamp)
       @prerequisites.any? { |n| application[n].timestamp > stamp}
     end
-
-#    # ----------------------------------------------------------------
-#    # Task class methods.
-#    #
-#    class << self
-#      # Apply the scope to the task name according to the rules for this kind
-#      # of task.  File based tasks ignore the scope when creating the name.
-#      def scope_name(scope, task_name)
-#        task_name
-#      end
-#    end
   end # class Rake::DataTask
 end
 
