@@ -1,5 +1,10 @@
 require '../lib/biorake.rb'
-require 'dm-core'
+begin
+  require 'rubygems'
+  require 'dm-core'
+rescue LoadError
+  raise LoadError, "You must have dm-core installed to run the sample (www.datamapper.org)"
+end
 
 DataMapper.setup(:default, 'sqlite3:sample.sqlite3')
 
