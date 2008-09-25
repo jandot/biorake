@@ -1,20 +1,18 @@
 Gem::Specification.new do |s|
   s.name = 'biorake'
-  s.version = "0.1"
+  s.version = "1.0"
  
-  s.author = "Jan Aerts"
+  s.authors = ["Jan Aerts","Charles Comstock"]
   s.email = "jan.aerts at gmail.com"
   s.homepage = "http://github.com/jandot/biorake"
-  s.summary = "Extension to rake to allow for timestamp usage on data in database"
-  s.description = "Extension to rake to allow for timestamp usage on data in database"
+  s.summary = "Extension to rake to allow for timestamp usage on tasks that don't alter files"
+  s.description = "Extension to rake to allow for timestamp usage on tasks that don't alter files (e.g. loading data in a database)"
  
   s.platform = Gem::Platform::RUBY
   s.files = Dir.glob("{lib,sample,test}/**/*")
   s.files.concat ["README.textile"]
  
   s.add_dependency('rake')
-  s.add_dependency('dm-core', '>=0.9.3')
-  s.add_dependency('dm-timestamps', '>=0.9.3')
   
   s.has_rdoc = false
   
