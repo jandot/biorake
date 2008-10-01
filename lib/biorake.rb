@@ -48,7 +48,7 @@ module Rake
       # Apply the scope to the task name according to the rules for this kind
       # of task.  File based tasks ignore the scope when creating the name.
       def scope_name(scope, task_name)
-        task_name
+        (scope + [task_name]).join(':')
       end
 
       def touch(fn)
