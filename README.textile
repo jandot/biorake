@@ -38,6 +38,16 @@ So if we had reloaded the data (001), the timestamp for that task in a
 metadata would be later than the one for task 002. As a result, task
 002 would automatically have to be rerun if we were to run task 003.
 
+h1. Install
+
+<pre>
+ gem sources -a http://gems.github.com (you only have to do this once)
+</pre>
+
+<pre>
+ sudo gem install jandot-biorake
+</pre>
+
 h1. Implementation
 
 I've started to implement an additional type of task, called
